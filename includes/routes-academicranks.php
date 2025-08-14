@@ -19,10 +19,7 @@ function scientist_get_academic_ranks()
         if ($wpdb->last_error) {
             return scientist_error('Database error: ' . $wpdb->last_error, 500);
         }
-        return scientist_json([
-            'status' => 'success',
-            'data' => $results
-        ]);
+        return scientist_json($results);
     } catch (Exception $e) {
         return scientist_error('Unexpected error: ' . $e->getMessage(), 500);
     }
