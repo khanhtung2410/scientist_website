@@ -34,7 +34,7 @@ function get_scientists_list()
     }
 
     foreach ($results as &$scientist) {
-        $scientist['image_link'] = !empty($scientist['image_link']) ? $scientist['image_link'] : null;
+        $scientist['image_link'] = !empty($scientist['image_link']) ? $scientist['image_link'] : "https://upload.wikimedia.org/wikipedia/commons/a/ac/Default_pfp.jpg";
     }
 
     return scientist_json($results);
