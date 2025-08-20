@@ -458,7 +458,7 @@ function update_major($data)
         return scientist_error('Invalid input data', 400);
     }
 
-        $major = $wpdb->get_row(
+    $major = $wpdb->get_row(
         $wpdb->prepare(
             "SELECT id, field_name, field_code FROM field WHERE field_code = %s AND level = 'major'",
             $major_code
@@ -509,7 +509,10 @@ function update_major($data)
         return scientist_error('Failed to update major', 500);
     }
 
-    return scientist_json(['success' => true]);
+    return scientist_json([
+        'message' => 'Updated successfully',
+        'updated_fields' => $fields
+    ]);
 }
 
 function update_group($data)
@@ -575,7 +578,10 @@ function update_group($data)
         return scientist_error('Failed to update specialization group', 500);
     }
 
-    return scientist_json(['success' => true]);
+    return scientist_json([
+        'message' => 'Updated successfully',
+        'updated_fields' => $fields
+    ]);
 }
 
 function update_specialization($data)
@@ -640,5 +646,8 @@ function update_specialization($data)
     if ($updated === false) {
         return scientist_error('Failed to update specialization', 500);
     }
-    return scientist_json(['success' => true]);
+    return scientist_json([
+        'message' => 'Updated successfully',
+        'updated_fields' => $fields
+    ]);
 }

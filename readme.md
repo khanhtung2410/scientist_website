@@ -148,14 +148,14 @@
         {
             "major_code": 1,
             "major_name": "Khoa học máy tính",
-            "specialization_groups": [
+            "groups": [
                 {
-                    "specialization_group_code": "A",
-                    "specialization_group_name": "Nhóm A",
+                    "group_code": "A",
+                    "group_name": "Nhóm A",
                     "specializations": [
                         {
-                            "specialization_code": "A1",
-                            "specialization_name": "Chuyên ngành 1"
+                            "specialize_code": "A1",
+                            "specialize_name": "Chuyên ngành 1"
                         }
                     ]
                 }
@@ -204,8 +204,8 @@
     "status": "success",
     "data": [
         {
-            "specialization_group_code": "A",
-            "specialization_group_name": "Nhóm A"
+            "group_code": "A",
+            "group_name": "Nhóm A"
         }
     ]
 }
@@ -213,12 +213,12 @@
 </details>
 
 <details>
-<summary>Example Error (Invalid major code)</summary>
+<summary>Example Error (Missing major code)</summary>
 
 ```json
 {
     "status": "error",
-    "message": "Invalid major code"
+    "message": "Missing major code"
 }
 ```
 </details>
@@ -250,7 +250,7 @@
 | Code | Meaning                | Example Response                                      |
 |------|------------------------|------------------------------------------------------|
 | 200  | Success                | `{ "status": "success", "data": [...] }`             |
-| 400  | Invalid major code     | `{ "status": "error", "message": "Invalid major code" }` |
+| 400  | Missing major code     | `{ "status": "error", "message": "Missing major code" }` |
 | 404  | Major not found        | `{ "status": "error", "message": "Major not found" }` |
 | 500  | Database/Server Error  | `{ "status": "error", "message": "Database error: ..." }` |
 
@@ -283,12 +283,12 @@
 </details>
 
 <details>
-<summary>Example Error (Invalid parameters)</summary>
+<summary>Example Error (Missing code(s))</summary>
 
 ```json
 {
     "status": "error",
-    "message": "Invalid parameters"
+    "message": "Missing code(s)"
 }
 ```
 </details>
@@ -331,7 +331,7 @@
 | Code | Meaning                        | Example Response                                         |
 |------|--------------------------------|---------------------------------------------------------|
 | 200  | Success                        | `{ "status": "success", "data": [...] }`                 |
-| 400  | Invalid parameters             | `{ "status": "error", "message": "Invalid parameters" }`|
+| 400  | Missing code(s)                | `{ "status": "error", "message": "Missing code(s)" }`   |
 | 404  | Major/group not found          | `{ "status": "error", "message": "Major not found" }` or `{ "status": "error", "message": "Specialization group not found" }` |
 | 500  | Database/Server Error          | `{ "status": "error", "message": "Database error: ..." }` |
 
@@ -362,12 +362,34 @@
 </details>
 
 <details>
-<summary>Example Error (Not found)</summary>
+<summary>Example Error (Missing code(s))</summary>
+
+```json
+{
+    "status": "error",
+    "message": "Missing code(s)"
+}
+```
+</details>
+
+<details>
+<summary>Example Error (Specialization not found)</summary>
 
 ```json
 {
     "status": "error",
     "message": "Specialization not found"
+}
+```
+</details>
+
+<details>
+<summary>Example Error (Database error)</summary>
+
+```json
+{
+    "status": "error",
+    "message": "Database error: ...details..."
 }
 ```
 </details>
@@ -405,13 +427,16 @@
 
 ```json
 {
-    "major_id": 123
+    "status": "success",
+    "data": {
+        "major_id": 123
+    }
 }
 ```
 </details>
 
 <details>
-<summary>Example Error</summary>
+<summary>Example Error (Major code already exists)</summary>
 
 ```json
 {
@@ -421,11 +446,33 @@
 ```
 </details>
 
+<details>
+<summary>Example Error (Invalid input)</summary>
+
+```json
+{
+    "status": "error",
+    "message": "Invalid input data"
+}
+```
+</details>
+
+<details>
+<summary>Example Error (Database error)</summary>
+
+```json
+{
+    "status": "error",
+    "message": "Failed to add major"
+}
+```
+</details>
+
 ##### Success and Error Codes
 
 | Code | Meaning                        | Example Response                                         |
 |------|--------------------------------|---------------------------------------------------------|
-| 200  | Success                        | `{ "major_id": 123 }`                                   |
+| 200  | Success                        | `{ "status": "success", "data": { "major_id": 123 } }`  |
 | 400  | Invalid input                  | `{ "status": "error", "message": "Invalid input data" }`|
 | 409  | Major code already exists      | `{ "status": "error", "message": "Major code already exists" }` |
 | 500  | Database/Server Error          | `{ "status": "error", "message": "Failed to add major" }` |
@@ -455,13 +502,16 @@
 
 ```json
 {
-    "group_id": 456
+    "status": "success",
+    "data": {
+        "group_id": 456
+    }
 }
 ```
 </details>
 
 <details>
-<summary>Example Error</summary>
+<summary>Example Error (Specialization group code already exists)</summary>
 
 ```json
 {
@@ -471,11 +521,44 @@
 ```
 </details>
 
+<details>
+<summary>Example Error (Major not found)</summary>
+
+```json
+{
+    "status": "error",
+    "message": "Major not found"
+}
+```
+</details>
+
+<details>
+<summary>Example Error (Invalid input)</summary>
+
+```json
+{
+    "status": "error",
+    "message": "Invalid input data"
+}
+```
+</details>
+
+<details>
+<summary>Example Error (Database error)</summary>
+
+```json
+{
+    "status": "error",
+    "message": "Failed to add specialization group"
+}
+```
+</details>
+
 ##### Success and Error Codes
 
 | Code | Meaning                        | Example Response                                         |
 |------|--------------------------------|---------------------------------------------------------|
-| 200  | Success                        | `{ "group_id": 456 }`                                   |
+| 200  | Success                        | `{ "status": "success", "data": { "group_id": 456 } }`  |
 | 400  | Invalid input                  | `{ "status": "error", "message": "Invalid input data" }`|
 | 404  | Major not found                | `{ "status": "error", "message": "Major not found" }`   |
 | 409  | Group code already exists      | `{ "status": "error", "message": "Specialization group code already exists" }` |
@@ -507,13 +590,16 @@
 
 ```json
 {
-    "specialization_id": 789
+    "status": "success",
+    "data": {
+        "specialization_id": 789
+    }
 }
 ```
 </details>
 
 <details>
-<summary>Example Error</summary>
+<summary>Example Error (Specialization code already exists)</summary>
 
 ```json
 {
@@ -523,11 +609,55 @@
 ```
 </details>
 
+<details>
+<summary>Example Error (Major not found)</summary>
+
+```json
+{
+    "status": "error",
+    "message": "Major not found"
+}
+```
+</details>
+
+<details>
+<summary>Example Error (Specialization group not found)</summary>
+
+```json
+{
+    "status": "error",
+    "message": "Specialization group not found"
+}
+```
+</details>
+
+<details>
+<summary>Example Error (Invalid input)</summary>
+
+```json
+{
+    "status": "error",
+    "message": "Invalid input data"
+}
+```
+</details>
+
+<details>
+<summary>Example Error (Database error)</summary>
+
+```json
+{
+    "status": "error",
+    "message": "Failed to add specialization"
+}
+```
+</details>
+
 ##### Success and Error Codes
 
 | Code | Meaning                        | Example Response                                         |
 |------|--------------------------------|---------------------------------------------------------|
-| 200  | Success                        | `{ "specialization_id": 789 }`                          |
+| 200  | Success                        | `{ "status": "success", "data": { "specialization_id": 789 } }` |
 | 400  | Invalid input                  | `{ "status": "error", "message": "Invalid input data" }`|
 | 404  | Major/group not found          | `{ "status": "error", "message": "Major not found" }` or `{ "status": "error", "message": "Specialization group not found" }` |
 | 409  | Specialization code exists     | `{ "status": "error", "message": "Specialization code already exists" }` |
@@ -557,7 +687,14 @@
 
 ```json
 {
-    "success": true
+    "status": "success",
+    "data": {
+        "message": "Updated successfully",
+        "updated_fields": {
+            "field_name": "Tên ngành mới",
+            "field_code": "M02"
+        }
+    }
 }
 ```
 </details>
@@ -567,14 +704,17 @@
 
 ```json
 {
-    "success": false,
-    "message": "No changes detected"
+    "status": "success",
+    "data": {
+        "success": false,
+        "message": "No changes detected"
+    }
 }
 ```
 </details>
 
 <details>
-<summary>Example Error</summary>
+<summary>Example Error (Major code already exists)</summary>
 
 ```json
 {
@@ -584,11 +724,44 @@
 ```
 </details>
 
+<details>
+<summary>Example Error (Major not found)</summary>
+
+```json
+{
+    "status": "error",
+    "message": "Major not found"
+}
+```
+</details>
+
+<details>
+<summary>Example Error (Invalid input)</summary>
+
+```json
+{
+    "status": "error",
+    "message": "Invalid input data"
+}
+```
+</details>
+
+<details>
+<summary>Example Error (Database error)</summary>
+
+```json
+{
+    "status": "error",
+    "message": "Failed to update major"
+}
+```
+</details>
+
 ##### Success and Error Codes
 
 | Code | Meaning                        | Example Response                                         |
 |------|--------------------------------|---------------------------------------------------------|
-| 200  | Success/No change              | `{ "success": true }` or `{ "success": false, "message": "No changes detected" }` |
+| 200  | Success/No change              | `{ "status": "success", "data": { ... } }`              |
 | 400  | Invalid input                  | `{ "status": "error", "message": "Invalid input data" }`|
 | 404  | Major not found                | `{ "status": "error", "message": "Major not found" }`   |
 | 409  | Major code already exists      | `{ "status": "error", "message": "Major code already exists" }` |
@@ -618,7 +791,14 @@
 
 ```json
 {
-    "success": true
+    "status": "success",
+    "data": {
+        "message": "Updated successfully",
+        "updated_fields": {
+            "field_name": "Tên nhóm mới",
+            "field_code": "B"
+        }
+    }
 }
 ```
 </details>
@@ -628,14 +808,17 @@
 
 ```json
 {
-    "success": false,
-    "message": "No changes detected"
+    "status": "success",
+    "data": {
+        "success": false,
+        "message": "No changes detected"
+    }
 }
 ```
 </details>
 
 <details>
-<summary>Example Error</summary>
+<summary>Example Error (Specialization group code already exists)</summary>
 
 ```json
 {
@@ -645,11 +828,44 @@
 ```
 </details>
 
+<details>
+<summary>Example Error (Group not found)</summary>
+
+```json
+{
+    "status": "error",
+    "message": "Specialization group not found"
+}
+```
+</details>
+
+<details>
+<summary>Example Error (Invalid input)</summary>
+
+```json
+{
+    "status": "error",
+    "message": "Invalid input data"
+}
+```
+</details>
+
+<details>
+<summary>Example Error (Database error)</summary>
+
+```json
+{
+    "status": "error",
+    "message": "Failed to update specialization group"
+}
+```
+</details>
+
 ##### Success and Error Codes
 
 | Code | Meaning                        | Example Response                                         |
 |------|--------------------------------|---------------------------------------------------------|
-| 200  | Success/No change              | `{ "success": true }` or `{ "success": false, "message": "No changes detected" }` |
+| 200  | Success/No change              | `{ "status": "success", "data": { ... } }`              |
 | 400  | Invalid input                  | `{ "status": "error", "message": "Invalid input data" }`|
 | 404  | Group not found                | `{ "status": "error", "message": "Specialization group not found" }` |
 | 409  | Group code already exists      | `{ "status": "error", "message": "Specialization group code already exists" }` |
@@ -679,7 +895,14 @@
 
 ```json
 {
-    "success": true
+    "status": "success",
+    "data": {
+        "message": "Updated successfully",
+        "updated_fields": {
+            "field_name": "Tên chuyên ngành mới",
+            "field_code": "A2"
+        }
+    }
 }
 ```
 </details>
@@ -689,14 +912,17 @@
 
 ```json
 {
-    "success": false,
-    "message": "No changes detected"
+    "status": "success",
+    "data": {
+        "success": false,
+        "message": "No changes detected"
+    }
 }
 ```
 </details>
 
 <details>
-<summary>Example Error</summary>
+<summary>Example Error (Specialization code already exists)</summary>
 
 ```json
 {
@@ -706,11 +932,44 @@
 ```
 </details>
 
+<details>
+<summary>Example Error (Specialization not found)</summary>
+
+```json
+{
+    "status": "error",
+    "message": "Specialization not found"
+}
+```
+</details>
+
+<details>
+<summary>Example Error (Invalid input)</summary>
+
+```json
+{
+    "status": "error",
+    "message": "Invalid input data"
+}
+```
+</details>
+
+<details>
+<summary>Example Error (Database error)</summary>
+
+```json
+{
+    "status": "error",
+    "message": "Failed to update specialization"
+}
+```
+</details>
+
 ##### Success and Error Codes
 
 | Code | Meaning                        | Example Response                                         |
 |------|--------------------------------|---------------------------------------------------------|
-| 200  | Success/No change              | `{ "success": true }` or `{ "success": false, "message": "No changes detected" }` |
+| 200  | Success/No change              | `{ "status": "success", "data": { ... } }`              |
 | 400  | Invalid input                  | `{ "status": "error", "message": "Invalid input data" }`|
 | 404  | Specialization not found       | `{ "status": "error", "message": "Specialization not found" }` |
 | 409  | Specialization code exists     | `{ "status": "error", "message": "Specialization code already exists" }` |
