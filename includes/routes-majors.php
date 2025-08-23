@@ -23,6 +23,12 @@ register_rest_route('scientist/v1', '/major/(?P<major_code>\d+)/specialization-g
     'permission_callback' => '__return_true'
 ]);
 
+register_rest_route('scientist/v1', '/major/(?P<field_code>\d+)', [
+    'methods' => 'GET',
+    'callback' => 'get_by_code',
+    'permission_callback' => '__return_true'
+]);
+
 register_rest_route('scientist/v1', '/major/add', [
     'methods' => 'POST',
     'callback' => 'add_major',
@@ -263,6 +269,40 @@ function get_specialization($request)
     return scientist_json($specialization);
 }
 
+function get_by_code($request)
+{
+    global $wpdb;
+    try {
+        $field_code = sanitize_text_field($request['field_code']);
+
+        if (empty($field_code)) {
+            return scientist_error('Missing field code', 400);
+        }
+
+        $field = $wpdb->get_row(
+            $wpdb->prepare(
+                "SELECT id, field_name , field_code , level, parent_id
+             FROM field 
+             WHERE field_code = %s",
+                $field_code
+            ),
+            ARRAY_A
+        );
+
+        if ($wpdb->last_error) {
+            return scientist_error('Database error: ' . $wpdb->last_error, 500);
+        }
+
+        if (!$field) {
+            return scientist_error('Field not found', 404);
+        }
+        return scientist_json($field);
+    } catch (Exception $e) {
+        return scientist_error('Invalid request: ' . $e->getMessage(), 400);
+    }
+}
+
+
 function add_major($data)
 {
     global $wpdb;
@@ -446,208 +486,156 @@ function add_specialization($data)
     ]);
 }
 
-function update_major($data)
+function update_major(WP_REST_Request $request)
 {
-    global $wpdb;
-
-    $major_code = sanitize_text_field($data['major_code']);
-    $new_major_name = !empty($data['new_major_name']) ? sanitize_text_field($data['new_major_name']) : '';
-    $new_major_code = !empty($data['new_major_code']) ? sanitize_text_field($data['new_major_code']) : '';
-
-    if (empty($major_code) || (empty($new_major_name) && empty($new_major_code))) {
-        return scientist_error('Invalid input data', 400);
-    }
-
-    $major = $wpdb->get_row(
-        $wpdb->prepare(
-            "SELECT id, field_name, field_code FROM field WHERE field_code = %s AND level = 'major'",
-            $major_code
-        ),
-        ARRAY_A
-    );
-    if (!$major) {
-        return scientist_error('Major not found', 404);
-    }
-
-    $fields = [];
-    $formats = [];
-
-    if (!empty($new_major_name) && $major['field_name'] !== $new_major_name) {
-        $fields['field_name'] = $new_major_name;
-        $formats[] = '%s';
-    }
-
-    if (!empty($new_major_code) && $major['field_code'] !== $new_major_code) {
-        // Check duplicate
-        $exists = $wpdb->get_var(
-            $wpdb->prepare(
-                "SELECT COUNT(*) FROM field WHERE field_code = %s AND level = 'major' AND id != %d",
-                $new_major_code,
-                $major['id']
-            )
-        );
-        if ($exists > 0) {
-            return scientist_error('Major code already exists', 409);
-        }
-        $fields['field_code'] = $new_major_code;
-        $formats[] = '%s';
-    }
-
-    if (empty($fields)) {
-        return scientist_json(['success' => false, 'message' => 'No changes detected']);
-    }
-
-    $updated = $wpdb->update(
-        'field',
-        $fields,
-        ['id' => $major['id']],
-        $formats,
-        ['%d']
-    );
-
-    if ($updated === false) {
-        return scientist_error('Failed to update major', 500);
-    }
-
-    return scientist_json([
-        'message' => 'Updated successfully',
-        'updated_fields' => $fields
-    ]);
+    $major_code = sanitize_text_field($request['major_code']);
+    return update_field($major_code, 'major', $request->get_params());
 }
 
-function update_group($data)
+function update_specialization_group(WP_REST_Request $request)
 {
-    global $wpdb;
-
-    $group_code = sanitize_text_field($data['group_code']);
-    $new_group_name = !empty($data['new_group_name']) ? sanitize_text_field($data['new_group_name']) : '';
-    $new_group_code = !empty($data['new_group_code']) ? sanitize_text_field($data['new_group_code']) : '';
-
-    if (empty($group_code) || (empty($new_group_name) && empty($new_group_code))) {
-        return scientist_error('Invalid input data', 400);
-    }
-
-    $group = $wpdb->get_row(
-        $wpdb->prepare(
-            "SELECT id, field_name, field_code FROM field WHERE field_code = %s AND level = 'group'",
-            $group_code
-        ),
-        ARRAY_A
-    );
-    if (!$group) {
-        return scientist_error('Specialization group not found', 404);
-    }
-
-    $fields = [];
-    $formats = [];
-
-    if (!empty($new_group_name) && $group['field_name'] !== $new_group_name) {
-        $fields['field_name'] = $new_group_name;
-        $formats[] = '%s';
-    }
-
-    if (!empty($new_group_code) && $group['field_code'] !== $new_group_code) {
-        // Check duplicate
-        $exists = $wpdb->get_var(
-            $wpdb->prepare(
-                "SELECT COUNT(*) FROM field WHERE field_code = %s AND level = 'group' AND id != %d",
-                $new_group_code,
-                $group['id']
-            )
-        );
-        if ($exists > 0) {
-            return scientist_error('Specialization group code already exists', 409);
-        }
-        $fields['field_code'] = $new_group_code;
-        $formats[] = '%s';
-    }
-
-    if (empty($fields)) {
-        return scientist_json(['success' => false, 'message' => 'No changes detected']);
-    }
-
-    $updated = $wpdb->update(
-        'field',
-        $fields,
-        ['id' => $group['id']],
-        $formats,
-        ['%d']
-    );
-
-    if ($updated === false) {
-        return scientist_error('Failed to update specialization group', 500);
-    }
-
-    return scientist_json([
-        'message' => 'Updated successfully',
-        'updated_fields' => $fields
-    ]);
+    $group_code = sanitize_text_field($request['group_code']);
+    return update_field($group_code, 'group', $request->get_params());
 }
 
-function update_specialization($data)
+function update_specialization(WP_REST_Request $request)
+{
+    $specialization_code = sanitize_text_field($request['specialization_code']);
+    return update_field($specialization_code, 'specialization', $request->get_params());
+}
+
+
+function validate_field_code($code, $level, $wpdb) {
+    if (empty($code) || !ctype_digit($code)) {
+        return "Code must be numeric";
+    }
+
+    if ($level === 'major') {
+        // Major code: 3 digits, starts with 9
+        if (!preg_match('/^9\d{2}$/', $code)) {
+            return "Major code must be 3 digits and start with 9";
+        }
+    }
+
+    elseif ($level === 'group') {
+        // Group code: 6 digits
+        if (!preg_match('/^\d{5}$/', $code)) {
+            return "Group code must be 5 digits";
+        }
+
+        // First 3 digits must be a valid major code
+        $major_code = substr($code, 0, 3);
+        $exists = $wpdb->get_var(
+            $wpdb->prepare("SELECT COUNT(*) FROM field WHERE field_code = %s AND level = 'major'", $major_code)
+        );
+        if (!$exists) {
+            return "Group code must start with an existing major code";
+        }
+    }
+
+    elseif ($level === 'specialization') {
+        // Example: 9 digits, starts with group code
+        if (!preg_match('/^\d{7}$/', $code)) {
+            return "Specialization code must be 7 digits";
+        }
+
+        // First 5 digits must be a valid group code
+        $group_code = substr($code, 0, 5);
+        $exists = $wpdb->get_var(
+            $wpdb->prepare("SELECT COUNT(*) FROM field WHERE field_code = %s AND level = 'group'", $group_code)
+        );
+        if (!$exists) {
+            return "Specialization code must start with an existing group code";
+        }
+    }
+
+    else {
+        return "Invalid level";
+    }
+
+    return true; 
+}
+
+
+function update_field($field_code, $level, $data)
 {
     global $wpdb;
 
-    $specialization_code = sanitize_text_field($data['specialization_code']);
-    $new_specialization_name = !empty($data['new_specialization_name']) ? sanitize_text_field($data['new_specialization_name']) : '';
-    $new_specialization_code = !empty($data['new_specialization_code']) ? sanitize_text_field($data['new_specialization_code']) : '';
+    $new_name       = sanitize_text_field($data['new_name'] ?? '');
+    $new_code       = sanitize_text_field($data['new_code'] ?? '');
 
-    if (empty($specialization_code) || (empty($new_specialization_name) && empty($new_specialization_code))) {
+    if (
+        empty($field_code) || !is_numeric($field_code)
+        || !empty($new_code) && !is_numeric($new_code)
+    ) {
         return scientist_error('Invalid input data', 400);
     }
 
-    $specialization = $wpdb->get_row(
+    if (empty($new_name) && empty($new_code)) {
+        return scientist_error('No update data provided', 400);
+    }
+
+    if (!in_array($level, ['major', 'group', 'specialization'])) {
+        return scientist_error('Invalid level', 400);
+    }
+
+    // Get current field
+    $field = $wpdb->get_row(
         $wpdb->prepare(
-            "SELECT id, field_name, field_code FROM field WHERE field_code = %s AND level = 'specialization'",
-            $specialization_code
+            "SELECT id, field_name, field_code FROM field WHERE field_code = %s AND level = %s",
+            $field_code,
+            $level
         ),
         ARRAY_A
     );
-    if (!$specialization) {
-        return scientist_error('Specialization not found', 404);
+    if (!$field) {
+        return scientist_error(ucfirst($level) . ' not found', 404);
     }
 
-    $fields = [];
+    $fields  = [];
     $formats = [];
 
-    if (!empty($new_specialization_name) && $specialization['field_name'] !== $new_specialization_name) {
-        $fields['field_name'] = $new_specialization_name;
+    // Update name if changed
+    if ($new_name && $field['field_name'] !== $new_name) {
+        $fields['field_name'] = $new_name;
         $formats[] = '%s';
     }
 
-    if (!empty($new_specialization_code) && $specialization['field_code'] !== $new_specialization_code) {
-        // Check duplicate
+    // Update code if changed
+    if ($new_code && $field['field_code'] !== $new_code) {
         $exists = $wpdb->get_var(
             $wpdb->prepare(
-                "SELECT COUNT(*) FROM field WHERE field_code = %s AND level = 'specialization' AND id != %d",
-                $new_specialization_code,
-                $specialization['id']
+                "SELECT COUNT(*) FROM field WHERE field_code = %s AND level = %s AND id != %d",
+                $new_code,
+                $level,
+                $field['id']
             )
         );
-        if ($exists > 0) {
-            return scientist_error('Specialization code already exists', 409);
+        if ($exists) {
+            return scientist_error(ucfirst($level) . ' code already exists', 409);
         }
-        $fields['field_code'] = $new_specialization_code;
+        $fields['field_code'] = $new_code;
         $formats[] = '%s';
     }
 
-    if (empty($fields)) {
-        return scientist_json(['success' => false, 'message' => 'No changes detected']);
+    if (!$fields) {
+        return scientist_error(['message' => 'No changes detected']);
     }
 
     $updated = $wpdb->update(
         'field',
         $fields,
-        ['id' => $specialization['id']],
+        ['id' => $field['id']],
         $formats,
         ['%d']
     );
 
     if ($updated === false) {
-        return scientist_error('Failed to update specialization', 500);
+        return scientist_error('Failed to update ' . $level, 500);
     }
+
     return scientist_json([
-        'message' => 'Updated successfully',
+        'message'        => ucfirst($level) . ' updated successfully',
         'updated_fields' => $fields
     ]);
 }

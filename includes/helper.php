@@ -15,3 +15,4 @@ function scientist_error($message, $code = 400) {
         'message' => $message
     ], $code, JSON_UNESCAPED_UNICODE);
 }
+
