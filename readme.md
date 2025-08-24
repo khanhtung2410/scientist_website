@@ -136,7 +136,7 @@
   https://scientist.local/wp-json/scientist/v1/major/list
   ```
 
-##### Response
+#### Response
 
 <details>
 <summary>Example Success</summary>
@@ -146,15 +146,15 @@
     "status": "success",
     "data": [
         {
-            "major_code": 1,
+            "major_code": 901,
             "major_name": "Khoa học máy tính",
             "groups": [
                 {
-                    "group_code": "A",
+                    "group_code": "90101",
                     "group_name": "Nhóm A",
                     "specializations": [
                         {
-                            "specialize_code": "A1",
+                            "specialize_code": "9010101",
                             "specialize_name": "Chuyên ngành 1"
                         }
                     ]
@@ -177,7 +177,7 @@
 ```
 </details>
 
-##### Success and Error Codes
+#### Success and Error Codes
 
 | Code | Meaning                | Example Response                                      |
 |------|------------------------|------------------------------------------------------|
@@ -186,7 +186,78 @@
 
 ---
 
-### 2.2 List Specialization Groups by Major
+### 2.2 Get Major/Group/Specialization by Code
+
+- **Method:** `GET`
+- **Endpoint:**
+  ```
+  https://scientist.local/wp-json/scientist/v1/major/{field_code}
+  ```
+
+#### Response
+
+<details>
+<summary>Example Success</summary>
+
+```json
+{
+    "status": "success",
+    "data": {
+        "id": 1,
+        "field_name": "Khoa học máy tính",
+        "field_code": "901",
+        "level": "major",
+        "parent_id": null
+    }
+}
+```
+</details>
+
+<details>
+<summary>Example Error (Missing field code)</summary>
+
+```json
+{
+    "status": "error",
+    "message": "Missing field code"
+}
+```
+</details>
+
+<details>
+<summary>Example Error (Code must start with 9)</summary>
+
+```json
+{
+    "status": "error",
+    "message": "Code must start with 9"
+}
+```
+</details>
+
+<details>
+<summary>Example Error (Field not found)</summary>
+
+```json
+{
+    "status": "error",
+    "message": "Field not found"
+}
+```
+</details>
+
+#### Success and Error Codes
+
+| Code | Meaning                | Example Response                                      |
+|------|------------------------|------------------------------------------------------|
+| 200  | Success                | `{ "status": "success", "data": {...} }`             |
+| 400  | Missing/invalid code   | `{ "status": "error", "message": "Missing field code" }`<br>`{ "status": "error", "message": "Code must start with 9" }` |
+| 404  | Not found              | `{ "status": "error", "message": "Field not found" }`|
+| 500  | Database/Server Error  | `{ "status": "error", "message": "Database error: ..." }` |
+
+---
+
+### 2.3 List Specialization Groups by Major
 
 - **Method:** `GET`
 - **Endpoint:**
@@ -194,7 +265,7 @@
   https://scientist.local/wp-json/scientist/v1/major/{major_code}/specialization-group
   ```
 
-##### Response
+#### Response
 
 <details>
 <summary>Example Success</summary>
@@ -204,7 +275,7 @@
     "status": "success",
     "data": [
         {
-            "group_code": "A",
+            "group_code": "90101",
             "group_name": "Nhóm A"
         }
     ]
@@ -224,6 +295,17 @@
 </details>
 
 <details>
+<summary>Example Error (Major code must be 3 digits and start with 9)</summary>
+
+```json
+{
+    "status": "error",
+    "message": "Major code must be 3 digits and start with 9"
+}
+```
+</details>
+
+<details>
 <summary>Example Error (Major not found)</summary>
 
 ```json
@@ -234,29 +316,18 @@
 ```
 </details>
 
-<details>
-<summary>Example Error (Database error)</summary>
-
-```json
-{
-    "status": "error",
-    "message": "Database error: ...details..."
-}
-```
-</details>
-
-##### Success and Error Codes
+#### Success and Error Codes
 
 | Code | Meaning                | Example Response                                      |
 |------|------------------------|------------------------------------------------------|
 | 200  | Success                | `{ "status": "success", "data": [...] }`             |
-| 400  | Missing major code     | `{ "status": "error", "message": "Missing major code" }` |
-| 404  | Major not found        | `{ "status": "error", "message": "Major not found" }` |
+| 400  | Missing/invalid code   | `{ "status": "error", "message": "Missing major code" }`<br>`{ "status": "error", "message": "Major code must be 3 digits and start with 9" }` |
+| 404  | Major not found        | `{ "status": "error", "message": "Major not found" }`|
 | 500  | Database/Server Error  | `{ "status": "error", "message": "Database error: ..." }` |
 
 ---
 
-### 2.3 List Specializations by Major and Group
+### 2.4 List Specializations by Major and Group
 
 - **Method:** `GET`
 - **Endpoint:**
@@ -264,7 +335,7 @@
   https://scientist.local/wp-json/scientist/v1/major/{major_code}/specialization-group/{group_code}
   ```
 
-##### Response
+#### Response
 
 <details>
 <summary>Example Success</summary>
@@ -274,7 +345,7 @@
     "status": "success",
     "data": [
         {
-            "specialization_code": "A1",
+            "specialization_code": "9010101",
             "specialization_name": "Chuyên ngành 1"
         }
     ]
@@ -289,6 +360,28 @@
 {
     "status": "error",
     "message": "Missing code(s)"
+}
+```
+</details>
+
+<details>
+<summary>Example Error (Major code must be 3 digits and start with 9)</summary>
+
+```json
+{
+    "status": "error",
+    "message": "Major code must be 3 digits and start with 9"
+}
+```
+</details>
+
+<details>
+<summary>Example Error (Group code must be 5 digits)</summary>
+
+```json
+{
+    "status": "error",
+    "message": "Group code must be 5 digits"
 }
 ```
 </details>
@@ -315,29 +408,18 @@
 ```
 </details>
 
-<details>
-<summary>Example Error (Database error)</summary>
-
-```json
-{
-    "status": "error",
-    "message": "Database error: ...details..."
-}
-```
-</details>
-
-##### Success and Error Codes
+#### Success and Error Codes
 
 | Code | Meaning                        | Example Response                                         |
 |------|--------------------------------|---------------------------------------------------------|
-| 200  | Success                        | `{ "status": "success", "data": [...] }`                 |
-| 400  | Missing code(s)                | `{ "status": "error", "message": "Missing code(s)" }`   |
-| 404  | Major/group not found          | `{ "status": "error", "message": "Major not found" }` or `{ "status": "error", "message": "Specialization group not found" }` |
+| 200  | Success                        | `{ "status": "success", "data": [...] }`                |
+| 400  | Missing/invalid code           | `{ "status": "error", "message": "Missing code(s)" }`<br>`{ "status": "error", "message": "Major code must be 3 digits and start with 9" }`<br>`{ "status": "error", "message": "Group code must be 5 digits" }` |
+| 404  | Major/group not found          | `{ "status": "error", "message": "Major not found" }`<br>`{ "status": "error", "message": "Specialization group not found" }` |
 | 500  | Database/Server Error          | `{ "status": "error", "message": "Database error: ..." }` |
 
 ---
 
-### 2.4 Get Specialization by Major, Group, and Specialization Code
+### 2.5 Get Specialization by Major, Group, and Specialization Code
 
 - **Method:** `GET`
 - **Endpoint:**
@@ -354,7 +436,7 @@
 {
     "status": "success",
     "data": {
-        "specialize_code": "A1",
+        "specialize_code": "9010101",
         "specialization_name": "Chuyên ngành 1"
     }
 }
@@ -373,6 +455,39 @@
 </details>
 
 <details>
+<summary>Example Error (Major code must be 3 digits and start with 9)</summary>
+
+```json
+{
+    "status": "error",
+    "message": "Major code must be 3 digits and start with 9"
+}
+```
+</details>
+
+<details>
+<summary>Example Error (Group code must be 5 digits)</summary>
+
+```json
+{
+    "status": "error",
+    "message": "Group code must be 5 digits"
+}
+```
+</details>
+
+<details>
+<summary>Example Error (Specialization code must be 7 digits)</summary>
+
+```json
+{
+    "status": "error",
+    "message": "Specialization code must be 7 digits"
+}
+```
+</details>
+
+<details>
 <summary>Example Error (Specialization not found)</summary>
 
 ```json
@@ -383,29 +498,18 @@
 ```
 </details>
 
-<details>
-<summary>Example Error (Database error)</summary>
-
-```json
-{
-    "status": "error",
-    "message": "Database error: ...details..."
-}
-```
-</details>
-
-##### Success and Error Codes
+#### Success and Error Codes
 
 | Code | Meaning                        | Example Response                                         |
 |------|--------------------------------|---------------------------------------------------------|
 | 200  | Success                        | `{ "status": "success", "data": {...} }`                |
-| 400  | Missing code(s)                | `{ "status": "error", "message": "Missing code(s)" }`   |
+| 400  | Missing/invalid code           | `{ "status": "error", "message": "Missing code(s)" }`<br>`{ "status": "error", "message": "Major code must be 3 digits and start with 9" }`<br>`{ "status": "error", "message": "Group code must be 5 digits" }`<br>`{ "status": "error", "message": "Specialization code must be 7 digits" }` |
 | 404  | Not found                      | `{ "status": "error", "message": "Specialization not found" }` |
 | 500  | Database/Server Error          | `{ "status": "error", "message": "Database error: ..." }` |
 
 ---
 
-### 2.5 Add Major
+### 2.6 Add Major
 
 - **Method:** `POST`
 - **Endpoint:**
@@ -416,7 +520,7 @@
   ```json
   {
       "major_name": "Tên ngành",
-      "major_code": "M01"
+      "major_code": "901"
   }
   ```
 
@@ -447,6 +551,17 @@
 </details>
 
 <details>
+<summary>Example Error (Major code must be 3 digits and start with 9)</summary>
+
+```json
+{
+    "status": "error",
+    "message": "Major code must be 3 digits and start with 9"
+}
+```
+</details>
+
+<details>
 <summary>Example Error (Invalid input)</summary>
 
 ```json
@@ -468,18 +583,18 @@
 ```
 </details>
 
-##### Success and Error Codes
+#### Success and Error Codes
 
 | Code | Meaning                        | Example Response                                         |
 |------|--------------------------------|---------------------------------------------------------|
 | 200  | Success                        | `{ "status": "success", "data": { "major_id": 123 } }`  |
-| 400  | Invalid input                  | `{ "status": "error", "message": "Invalid input data" }`|
+| 400  | Invalid input                  | `{ "status": "error", "message": "Invalid input data" }`<br>`{ "status": "error", "message": "Major code must be 3 digits and start with 9" }` |
 | 409  | Major code already exists      | `{ "status": "error", "message": "Major code already exists" }` |
 | 500  | Database/Server Error          | `{ "status": "error", "message": "Failed to add major" }` |
 
 ---
 
-### 2.6 Add Specialization Group
+### 2.7 Add Specialization Group
 
 - **Method:** `POST`
 - **Endpoint:**
@@ -489,9 +604,9 @@
 - **Body:**
   ```json
   {
-      "major_code": "M01",
+      "major_code": "901",
       "group_name": "Nhóm A",
-      "group_code": "A"
+      "group_code": "90101"
   }
   ```
 
@@ -517,6 +632,28 @@
 {
     "status": "error",
     "message": "Specialization group code already exists"
+}
+```
+</details>
+
+<details>
+<summary>Example Error (Group code must be 5 digits)</summary>
+
+```json
+{
+    "status": "error",
+    "message": "Group code must be 5 digits"
+}
+```
+</details>
+
+<details>
+<summary>Example Error (Major code must be 3 digits and start with 9)</summary>
+
+```json
+{
+    "status": "error",
+    "message": "Major code must be 3 digits and start with 9"
 }
 ```
 </details>
@@ -554,19 +691,19 @@
 ```
 </details>
 
-##### Success and Error Codes
+#### Success and Error Codes
 
 | Code | Meaning                        | Example Response                                         |
 |------|--------------------------------|---------------------------------------------------------|
 | 200  | Success                        | `{ "status": "success", "data": { "group_id": 456 } }`  |
-| 400  | Invalid input                  | `{ "status": "error", "message": "Invalid input data" }`|
+| 400  | Invalid input                  | `{ "status": "error", "message": "Invalid input data" }`<br>`{ "status": "error", "message": "Group code must be 5 digits" }`<br>`{ "status": "error", "message": "Major code must be 3 digits and start with 9" }` |
 | 404  | Major not found                | `{ "status": "error", "message": "Major not found" }`   |
 | 409  | Group code already exists      | `{ "status": "error", "message": "Specialization group code already exists" }` |
 | 500  | Database/Server Error          | `{ "status": "error", "message": "Failed to add specialization group" }` |
 
 ---
 
-### 2.7 Add Specialization
+### 2.8 Add Specialization
 
 - **Method:** `POST`
 - **Endpoint:**
@@ -576,10 +713,10 @@
 - **Body:**
   ```json
   {
-      "major_code": "M01",
-      "group_code": "A",
+      "major_code": "901",
+      "group_code": "90101",
       "specialization_name": "Chuyên ngành 1",
-      "specialization_code": "A1"
+      "specialization_code": "9010101"
   }
   ```
 
@@ -605,6 +742,17 @@
 {
     "status": "error",
     "message": "Specialization code already exists"
+}
+```
+</details>
+
+<details>
+<summary>Example Error (Specialization code must be 7 digits)</summary>
+
+```json
+{
+    "status": "error",
+    "message": "Specialization code must be 7 digits"
 }
 ```
 </details>
@@ -653,19 +801,19 @@
 ```
 </details>
 
-##### Success and Error Codes
+#### Success and Error Codes
 
 | Code | Meaning                        | Example Response                                         |
 |------|--------------------------------|---------------------------------------------------------|
 | 200  | Success                        | `{ "status": "success", "data": { "specialization_id": 789 } }` |
-| 400  | Invalid input                  | `{ "status": "error", "message": "Invalid input data" }`|
-| 404  | Major/group not found          | `{ "status": "error", "message": "Major not found" }` or `{ "status": "error", "message": "Specialization group not found" }` |
+| 400  | Invalid input                  | `{ "status": "error", "message": "Invalid input data" }`<br>`{ "status": "error", "message": "Specialization code must be 7 digits" }` |
+| 404  | Major/group not found          | `{ "status": "error", "message": "Major not found" }`<br>`{ "status": "error", "message": "Specialization group not found" }` |
 | 409  | Specialization code exists     | `{ "status": "error", "message": "Specialization code already exists" }` |
 | 500  | Database/Server Error          | `{ "status": "error", "message": "Failed to add specialization" }` |
 
 ---
 
-### 2.8 Update Major
+### 2.9 Update Major
 
 - **Method:** `POST`
 - **Endpoint:**
@@ -675,8 +823,8 @@
 - **Body:** (any or both fields)
   ```json
   {
-      "new_major_name": "Tên ngành mới",
-      "new_major_code": "M02"
+      "new_name": "Tên ngành mới",
+      "new_code": "902"
   }
   ```
 
@@ -689,10 +837,10 @@
 {
     "status": "success",
     "data": {
-        "message": "Updated successfully",
+        "message": "Major updated successfully",
         "updated_fields": {
             "field_name": "Tên ngành mới",
-            "field_code": "M02"
+            "field_code": "902"
         }
     }
 }
@@ -700,15 +848,12 @@
 </details>
 
 <details>
-<summary>Example No Change</summary>
+<summary>Example Error (No changes detected)</summary>
 
 ```json
 {
-    "status": "success",
-    "data": {
-        "success": false,
-        "message": "No changes detected"
-    }
+    "status": "error",
+    "message": "No changes detected"
 }
 ```
 </details>
@@ -720,6 +865,17 @@
 {
     "status": "error",
     "message": "Major code already exists"
+}
+```
+</details>
+
+<details>
+<summary>Example Error (Major code must be 3 digits and start with 9)</summary>
+
+```json
+{
+    "status": "error",
+    "message": "Major code must be 3 digits and start with 9"
 }
 ```
 </details>
@@ -757,19 +913,19 @@
 ```
 </details>
 
-##### Success and Error Codes
+#### Success and Error Codes
 
 | Code | Meaning                        | Example Response                                         |
 |------|--------------------------------|---------------------------------------------------------|
-| 200  | Success/No change              | `{ "status": "success", "data": { ... } }`              |
-| 400  | Invalid input                  | `{ "status": "error", "message": "Invalid input data" }`|
+| 200  | Success                        | `{ "status": "success", "data": { ... } }`              |
+| 400  | Invalid input                  | `{ "status": "error", "message": "Invalid input data" }`<br>`{ "status": "error", "message": "Major code must be 3 digits and start with 9" }` |
 | 404  | Major not found                | `{ "status": "error", "message": "Major not found" }`   |
 | 409  | Major code already exists      | `{ "status": "error", "message": "Major code already exists" }` |
 | 500  | Database/Server Error          | `{ "status": "error", "message": "Failed to update major" }` |
 
 ---
 
-### 2.9 Update Specialization Group
+### 2.10 Update Specialization Group
 
 - **Method:** `POST`
 - **Endpoint:**
@@ -779,8 +935,8 @@
 - **Body:** (any or both fields)
   ```json
   {
-      "new_group_name": "Tên nhóm mới",
-      "new_group_code": "B"
+      "new_name": "Tên nhóm mới",
+      "new_code": "90102"
   }
   ```
 
@@ -793,10 +949,10 @@
 {
     "status": "success",
     "data": {
-        "message": "Updated successfully",
+        "message": "Group updated successfully",
         "updated_fields": {
             "field_name": "Tên nhóm mới",
-            "field_code": "B"
+            "field_code": "90102"
         }
     }
 }
@@ -804,15 +960,12 @@
 </details>
 
 <details>
-<summary>Example No Change</summary>
+<summary>Example Error (No changes detected)</summary>
 
 ```json
 {
-    "status": "success",
-    "data": {
-        "success": false,
-        "message": "No changes detected"
-    }
+    "status": "error",
+    "message": "No changes detected"
 }
 ```
 </details>
@@ -823,7 +976,18 @@
 ```json
 {
     "status": "error",
-    "message": "Specialization group code already exists"
+    "message": "Group code already exists"
+}
+```
+</details>
+
+<details>
+<summary>Example Error (Group code must be 5 digits)</summary>
+
+```json
+{
+    "status": "error",
+    "message": "Group code must be 5 digits"
 }
 ```
 </details>
@@ -834,7 +998,7 @@
 ```json
 {
     "status": "error",
-    "message": "Specialization group not found"
+    "message": "Group not found"
 }
 ```
 </details>
@@ -856,24 +1020,24 @@
 ```json
 {
     "status": "error",
-    "message": "Failed to update specialization group"
+    "message": "Failed to update group"
 }
 ```
 </details>
 
-##### Success and Error Codes
+#### Success and Error Codes
 
 | Code | Meaning                        | Example Response                                         |
 |------|--------------------------------|---------------------------------------------------------|
-| 200  | Success/No change              | `{ "status": "success", "data": { ... } }`              |
-| 400  | Invalid input                  | `{ "status": "error", "message": "Invalid input data" }`|
-| 404  | Group not found                | `{ "status": "error", "message": "Specialization group not found" }` |
-| 409  | Group code already exists      | `{ "status": "error", "message": "Specialization group code already exists" }` |
-| 500  | Database/Server Error          | `{ "status": "error", "message": "Failed to update specialization group" }` |
+| 200  | Success                        | `{ "status": "success", "data": { ... } }`              |
+| 400  | Invalid input                  | `{ "status": "error", "message": "Invalid input data" }`<br>`{ "status": "error", "message": "Group code must be 5 digits" }` |
+| 404  | Group not found                | `{ "status": "error", "message": "Group not found" }`   |
+| 409  | Group code already exists      | `{ "status": "error", "message": "Group code already exists" }` |
+| 500  | Database/Server Error          | `{ "status": "error", "message": "Failed to update group" }` |
 
 ---
 
-### 2.10 Update Specialization
+### 2.11 Update Specialization
 
 - **Method:** `POST`
 - **Endpoint:**
@@ -883,8 +1047,8 @@
 - **Body:** (any or both fields)
   ```json
   {
-      "new_specialization_name": "Tên chuyên ngành mới",
-      "new_specialization_code": "A2"
+      "new_name": "Tên chuyên ngành mới",
+      "new_code": "9010102"
   }
   ```
 
@@ -897,10 +1061,10 @@
 {
     "status": "success",
     "data": {
-        "message": "Updated successfully",
+        "message": "Specialization updated successfully",
         "updated_fields": {
             "field_name": "Tên chuyên ngành mới",
-            "field_code": "A2"
+            "field_code": "9010102"
         }
     }
 }
@@ -908,15 +1072,12 @@
 </details>
 
 <details>
-<summary>Example No Change</summary>
+<summary>Example Error (No changes detected)</summary>
 
 ```json
 {
-    "status": "success",
-    "data": {
-        "success": false,
-        "message": "No changes detected"
-    }
+    "status": "error",
+    "message": "No changes detected"
 }
 ```
 </details>
@@ -928,6 +1089,17 @@
 {
     "status": "error",
     "message": "Specialization code already exists"
+}
+```
+</details>
+
+<details>
+<summary>Example Error (Specialization code must be 7 digits)</summary>
+
+```json
+{
+    "status": "error",
+    "message": "Specialization code must be 7 digits"
 }
 ```
 </details>
@@ -965,12 +1137,12 @@
 ```
 </details>
 
-##### Success and Error Codes
+#### Success and Error Codes
 
 | Code | Meaning                        | Example Response                                         |
 |------|--------------------------------|---------------------------------------------------------|
-| 200  | Success/No change              | `{ "status": "success", "data": { ... } }`              |
-| 400  | Invalid input                  | `{ "status": "error", "message": "Invalid input data" }`|
+| 200  | Success                        | `{ "status": "success", "data": { ... } }`              |
+| 400  | Invalid input                  | `{ "status": "error", "message": "Invalid input data" }`<br>`{ "status": "error", "message": "Specialization code must be 7 digits" }` |
 | 404  | Specialization not found       | `{ "status": "error", "message": "Specialization not found" }` |
 | 409  | Specialization code exists     | `{ "status": "error", "message": "Specialization code already exists" }` |
 | 500  | Database/Server Error          | `{ "status": "error", "message": "Failed to update specialization" }` |

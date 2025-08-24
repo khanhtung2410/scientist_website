@@ -127,10 +127,16 @@ function get_specialization_groups($request)
 {
     global $wpdb;
     $major_code = isset($request['major_code']) ? $request['major_code'] : '';
+
     if (empty($major_code)) {
         return scientist_error('Missing major code', 400);
     }
-    // Get major id by code
+
+    $validation = validate_field_code($major_code, 'major', $wpdb);
+    if ($validation !== true) {
+        return scientist_error($validation, 400);
+    }
+
     $major = $wpdb->get_row(
         $wpdb->prepare(
             "SELECT id FROM field WHERE field_code = %s AND level = 'major'",
@@ -170,8 +176,16 @@ function get_specializations($request)
     if (empty($major_code) || empty($group_code)) {
         return scientist_error('Missing code(s)', 400);
     }
+    $validation = validate_field_code($major_code, 'major', $wpdb);
+    if ($validation !== true) {
+        return scientist_error($validation, 400);
+    }
 
-    // Get major id
+    $validation2 = validate_field_code($group_code, 'group', $wpdb);
+    if ($validation2 !== true) {
+        return scientist_error($validation2, 400);
+    }
+
     $major = $wpdb->get_row(
         $wpdb->prepare(
             "SELECT id FROM field WHERE field_code = %s AND level = 'major'",
@@ -182,7 +196,7 @@ function get_specializations($request)
     if (!$major) {
         return scientist_error('Major not found', 404);
     }
-    // Get group id
+
     $group = $wpdb->get_row(
         $wpdb->prepare(
             "SELECT id FROM field WHERE field_code = %s AND level = 'group' AND parent_id = %d",
@@ -226,7 +240,22 @@ function get_specialization($request)
     if (empty($major_code) || empty($group_code) || empty($specialization_code)) {
         return scientist_error('Missing code(s)', 400);
     }
-    // Get major id
+
+    $validation = validate_field_code($major_code, 'major', $wpdb);
+    if ($validation !== true) {
+        return scientist_error($validation, 400);
+    }
+
+    $validation2 = validate_field_code($group_code, 'group', $wpdb);
+    if ($validation2 !== true) {
+        return scientist_error($validation2, 400);
+    }
+
+    $validation3 = validate_field_code($specialization_code, 'specialization', $wpdb);
+    if ($validation3 !== true) {
+        return scientist_error($validation3, 400);
+    }
+
     $major = $wpdb->get_row(
         $wpdb->prepare(
             "SELECT id FROM field WHERE field_code = %s AND level = 'major'",
@@ -237,7 +266,7 @@ function get_specialization($request)
     if (!$major) {
         return scientist_error('Major not found', 404);
     }
-    // Get group id
+
     $group = $wpdb->get_row(
         $wpdb->prepare(
             "SELECT id FROM field WHERE field_code = %s AND level = 'group' AND parent_id = %d",
@@ -249,7 +278,7 @@ function get_specialization($request)
     if (!$group) {
         return scientist_error('Specialization group not found', 404);
     }
-    // Get specialization
+
     $specialization = $wpdb->get_row(
         $wpdb->prepare(
             "SELECT field_code as specialize_code, field_name as specialization_name 
@@ -277,6 +306,9 @@ function get_by_code($request)
 
         if (empty($field_code)) {
             return scientist_error('Missing field code', 400);
+        }
+        if (!preg_match('/^9/', $field_code)) {
+            return scientist_error("Code must start with 9", 400);
         }
 
         $field = $wpdb->get_row(
@@ -310,7 +342,13 @@ function add_major($data)
     $major_name = sanitize_text_field($data['major_name']);
     $major_code = sanitize_text_field($data['major_code']);
 
-    if (empty($major_name) || empty($major_code)) {
+
+    $validation = validate_field_code($major_code, 'major', $wpdb);
+    if ($validation !== true) {
+        return scientist_error($validation, 400);
+    }
+
+    if (empty($major_name)) {
         return scientist_error('Invalid input data', 400);
     }
 
@@ -359,7 +397,16 @@ function add_specialization_group($data)
     $group_name = sanitize_text_field($data['group_name']);
     $group_code = sanitize_text_field($data['group_code']);
 
-    if (empty($major_code) || empty($group_name) || empty($group_code)) {
+    $validation = validate_field_code($group_code, 'group', $wpdb);
+    if ($validation !== true) {
+        return scientist_error($validation, 400);
+    }
+    $validation2 = validate_field_code($major_code, 'major', $wpdb);
+    if ($validation2 !== true) {
+        return scientist_error($validation2, 400);
+    }
+
+    if (empty($major_code) || empty($group_name)) {
         return scientist_error('Invalid input data', 400);
     }
 
@@ -422,7 +469,12 @@ function add_specialization($data)
     $specialization_name = sanitize_text_field($data['specialization_name']);
     $specialization_code = sanitize_text_field($data['specialization_code']);
 
-    if (empty($major_code) || empty($group_code) || empty($specialization_name) || empty($specialization_code)) {
+    $validation = validate_field_code($specialization_code, 'specialization', $wpdb);
+    if ($validation !== true) {
+        return scientist_error($validation, 400);
+    }
+
+    if (empty($major_code) || empty($group_code) || empty($specialization_name)) {
         return scientist_error('Invalid input data', 400);
     }
 
@@ -505,7 +557,8 @@ function update_specialization(WP_REST_Request $request)
 }
 
 
-function validate_field_code($code, $level, $wpdb) {
+function validate_field_code($code, $level, $wpdb)
+{
     if (empty($code) || !ctype_digit($code)) {
         return "Code must be numeric";
     }
@@ -515,10 +568,8 @@ function validate_field_code($code, $level, $wpdb) {
         if (!preg_match('/^9\d{2}$/', $code)) {
             return "Major code must be 3 digits and start with 9";
         }
-    }
-
-    elseif ($level === 'group') {
-        // Group code: 6 digits
+    } elseif ($level === 'group') {
+        // Group code: 5 digits
         if (!preg_match('/^\d{5}$/', $code)) {
             return "Group code must be 5 digits";
         }
@@ -531,10 +582,8 @@ function validate_field_code($code, $level, $wpdb) {
         if (!$exists) {
             return "Group code must start with an existing major code";
         }
-    }
-
-    elseif ($level === 'specialization') {
-        // Example: 9 digits, starts with group code
+    } elseif ($level === 'specialization') {
+        // Example: 7 digits, starts with group code
         if (!preg_match('/^\d{7}$/', $code)) {
             return "Specialization code must be 7 digits";
         }
@@ -547,13 +596,11 @@ function validate_field_code($code, $level, $wpdb) {
         if (!$exists) {
             return "Specialization code must start with an existing group code";
         }
-    }
-
-    else {
+    } else {
         return "Invalid level";
     }
 
-    return true; 
+    return true;
 }
 
 
@@ -564,21 +611,26 @@ function update_field($field_code, $level, $data)
     $new_name       = sanitize_text_field($data['new_name'] ?? '');
     $new_code       = sanitize_text_field($data['new_code'] ?? '');
 
-    if (
-        empty($field_code) || !is_numeric($field_code)
-        || !empty($new_code) && !is_numeric($new_code)
-    ) {
-        return scientist_error('Invalid input data', 400);
+    if (!empty($data['field_code']) && $data['field_code'] !== $field_code) {
+        return scientist_error('Field code mismatch between URL and body', 400);
+    }
+
+    $validation = validate_field_code($field_code, $level, $wpdb);
+
+    if ($validation !== true) {
+        return scientist_error($validation, 400);
+    }
+
+    if (!empty($new_code)) {
+        $validation = validate_field_code($new_code, $level, $wpdb);
+        if ($validation !== true) {
+            return scientist_error($validation, 400);
+        }
     }
 
     if (empty($new_name) && empty($new_code)) {
         return scientist_error('No update data provided', 400);
     }
-
-    if (!in_array($level, ['major', 'group', 'specialization'])) {
-        return scientist_error('Invalid level', 400);
-    }
-
     // Get current field
     $field = $wpdb->get_row(
         $wpdb->prepare(
