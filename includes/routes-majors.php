@@ -634,7 +634,7 @@ function update_field($field_code, $level, $data)
     // Get current field
     $field = $wpdb->get_row(
         $wpdb->prepare(
-            "SELECT id, field_name, field_code FROM field WHERE field_code = %s AND level = %s",
+            "SELECT id, field_name, field_code, parent_id FROM field WHERE field_code = %s AND level = %s",
             $field_code,
             $level
         ),
@@ -668,6 +668,30 @@ function update_field($field_code, $level, $data)
         }
         $fields['field_code'] = $new_code;
         $formats[] = '%s';
+    }
+
+    if ($level === 'group' && !empty($new_code)) {
+        // Ensure new group code's major part exists
+        $parent_major_code = substr($new_code, 0, 3);
+        $parent_major = $wpdb->get_row(
+            $wpdb->prepare("SELECT id FROM field WHERE field_code = %s AND level = 'major'", $parent_major_code),
+            ARRAY_A
+        );
+        if ($parent_major) {
+            $fields['parent_id'] = $parent_major['id'];
+            $formats[] = '%d';
+        }
+    } elseif ($level === 'specialization' && !empty($new_code)) {
+        // Ensure new specialization code's group part exists
+        $parent_group_code = substr($new_code, 0, 5);
+        $parent_group = $wpdb->get_row(
+            $wpdb->prepare("SELECT id FROM field WHERE field_code = %s AND level = 'group'", $parent_group_code),
+            ARRAY_A
+        );
+        if ($parent_group) {
+            $fields['parent_id'] = $parent_group['id'];
+            $formats[] = '%d';
+        }
     }
 
     if (!$fields) {
