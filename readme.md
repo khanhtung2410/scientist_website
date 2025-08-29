@@ -1148,3 +1148,184 @@
 | 500  | Database/Server Error          | `{ "status": "error", "message": "Failed to update specialization" }` |
 
 ---
+
+## 3. Scientist Images
+
+### 3.1 Get Scientist Image
+
+- **Method:** `GET`
+- **Endpoint:**
+  ```
+  https://scientist.local/wp-json/scientist/v1/scientist/{id}/image
+  ```
+
+#### Response
+
+<details>
+<summary>Example Success</summary>
+
+```json
+{
+    "status": "success",
+    "data": {
+        "image_link": "https://scientist.local/wp-content/uploads/2024/05/image.jpg"
+    }
+}
+```
+</details>
+
+<details>
+<summary>Example Error (Invalid scientist ID)</summary>
+
+```json
+{
+    "status": "error",
+    "message": "Invalid scientist ID"
+}
+```
+</details>
+
+<details>
+<summary>Example Error (Image not found)</summary>
+
+```json
+{
+    "status": "error",
+    "message": "Image not found for this scientist"
+}
+```
+</details>
+
+#### Success and Error Codes
+
+| Code | Meaning                | Example Response                                      |
+|------|------------------------|------------------------------------------------------|
+| 200  | Success                | `{ "status": "success", "data": { "image_link": "..." } }` |
+| 400  | Invalid scientist ID   | `{ "status": "error", "message": "Invalid scientist ID" }` |
+| 404  | Image not found        | `{ "status": "error", "message": "Image not found for this scientist" }` |
+
+---
+
+### 3.2 Add Scientist Image
+
+- **Method:** `POST`
+- **Endpoint:**
+  ```
+  https://scientist.local/wp-json/scientist/v1/scientist/{id}/image/add
+  ```
+- **Body:**  
+  Form-data with file field named `picture`.
+
+#### Response
+
+<details>
+<summary>Example Success</summary>
+
+```json
+{
+    "status": "success",
+    "data": {
+        "message": "Image added successfully",
+        "id": 10,
+        "image_link": "https://scientist.local/wp-content/uploads/2024/05/image.jpg"
+    }
+}
+```
+</details>
+
+<details>
+<summary>Example Error (Invalid scientist ID)</summary>
+
+```json
+{
+    "status": "error",
+    "message": "Invalid scientist ID"
+}
+```
+</details>
+
+<details>
+<summary>Example Error (No image file provided)</summary>
+
+```json
+{
+    "status": "error",
+    "message": "No image file provided"
+}
+```
+</details>
+
+<details>
+<summary>Example Error (Image upload failed)</summary>
+
+```json
+{
+    "status": "error",
+    "message": "Image upload failed: ...details..."
+}
+```
+</details>
+
+#### Success and Error Codes
+
+| Code | Meaning                | Example Response                                      |
+|------|------------------------|------------------------------------------------------|
+| 200  | Success                | `{ "status": "success", "data": { ... } }`           |
+| 400  | Invalid input/upload   | `{ "status": "error", "message": "Invalid scientist ID" }`<br>`{ "status": "error", "message": "No image file provided" }`<br>`{ "status": "error", "message": "Image upload failed: ..." }` |
+
+---
+
+### 3.3 Remove Scientist Image
+
+- **Method:** `DELETE`
+- **Endpoint:**
+  ```
+  https://scientist.local/wp-json/scientist/v1/scientist/{id}/image/remove/{image_id}
+  ```
+
+#### Response
+
+<details>
+<summary>Example Success</summary>
+
+```json
+{
+    "status": "success",
+    "data": {
+        "message": "Image removed successfully"
+    }
+}
+```
+</details>
+
+<details>
+<summary>Example Error (Invalid ID)</summary>
+
+```json
+{
+    "status": "error",
+    "message": "Invalid ID"
+}
+```
+</details>
+
+<details>
+<summary>Example Error (Image not found)</summary>
+
+```json
+{
+    "status": "error",
+    "message": "Image not found for this scientist"
+}
+```
+</details>
+
+#### Success and Error Codes
+
+| Code | Meaning                | Example Response                                      |
+|------|------------------------|------------------------------------------------------|
+| 200  | Success                | `{ "status": "success", "data": { "message": "Image removed successfully" } }` |
+| 400  | Invalid ID             | `{ "status": "error", "message": "Invalid ID" }`     |
+| 404  | Image not found        | `{ "status": "error", "message": "Image not found for this scientist" }` |
+
+---
