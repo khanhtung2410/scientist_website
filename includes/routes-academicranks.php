@@ -38,26 +38,35 @@ function scientist_add_academic_rank($data)
     $name = sanitize_text_field($data['name']);
     $abbreviation = sanitize_text_field($data['abbreviation']);
 
-    $exists = $wpdb->get_var(
-        $wpdb->prepare(
-            "SELECT COUNT(*) FROM academic_ranks WHERE name = %s AND abbreviation = %s",
-            $name,
-            $abbreviation
-        )
-    );
+    $wpdb->query('START TRANSACTION');
+    try {
+        $exists = $wpdb->get_var(
+            $wpdb->prepare(
+                "SELECT COUNT(*) FROM academic_ranks WHERE name = %s AND abbreviation = %s",
+                $name,
+                $abbreviation
+            )
+        );
 
-    if ( $exists > 0 ) {
-        return scientist_error( 'Academic rank already exists', 409 );
+        if ( $exists > 0 ) {
+            $wpdb->query('ROLLBACK');
+            return scientist_error( 'Academic rank already exists', 409 );
+        }
+
+        $wpdb->insert('academic_ranks', ['name' => $name, 'abbreviation' => $abbreviation]);
+
+        if ($wpdb->last_error) {
+            $wpdb->query('ROLLBACK');
+            return scientist_error('Error adding academic rank: ' . $wpdb->last_error, 500);
+        }
+
+        $wpdb->query('COMMIT');
+        return scientist_json([
+            'status' => 'success',
+            'message' => 'Academic rank added successfully'
+        ]);
+    } catch (\Throwable $e) {
+        $wpdb->query('ROLLBACK');
+        return scientist_error('Error adding academic rank: ' . $e->getMessage(), 500);
     }
-
-    $wpdb->insert('academic_ranks', ['name' => $name, 'abbreviation' => $abbreviation]);
-
-    if ($wpdb->last_error) {
-        return scientist_error('Error adding academic rank: ' . $wpdb->last_error, 500);
-    }
-
-    return scientist_json([
-        'status' => 'success',
-        'message' => 'Academic rank added successfully'
-    ]);
 }

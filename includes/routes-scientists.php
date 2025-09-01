@@ -58,6 +58,10 @@ function get_scientist_by_id($data)
         $id
     ), ARRAY_A);
 
+    if ($result['image_link'] === null) {
+        $result['image_link'] = "https://upload.wikimedia.org/wikipedia/commons/a/ac/Default_pfp.jpg";
+    }
+
     if (empty($result)) {
         return scientist_error('Scientist not found', 404);
     }
@@ -77,6 +81,7 @@ function add_scientist($data)
     $bio = sanitize_textarea_field($data['bio'] ?? '');
     $academic_rank_id = intval($data['academic_rank_id']);
     $paper_links = isset($data['paper_links']) && is_array($data['paper_links']) ? array_map('esc_url_raw', $data['paper_links']) : [];
+    $major_field_ids = isset($data['major_field_ids']) && is_array($data['major_field_ids']) ? array_map('intval', $data['major_field_ids']) : [];
 
     if (
         empty($name) || empty($position) || empty($work_place) || $academic_rank_id <= 0
@@ -89,66 +94,80 @@ function add_scientist($data)
         return scientist_error('Invalid birth year', 400);
     }
 
-    $insert = $wpdb->insert(
-        'scientists',
-        [
-            'name' => $name,
-            'birth_year' => $birth_year,
-            'gender' => $gender,
-            'position' => $position,
-            'work_place' => $work_place,
-            'bio' => $bio,
-            'academic_rank_id' => $academic_rank_id,
-            'time_created' => current_time('mysql'),
-            'time_updated' => current_time('mysql')
-        ]
-    );
-    if ($insert === false) {
-        return scientist_error('Failed to add scientist', 500);
-    }
-    $id = $wpdb->insert_id;
-    $image_url = null;
-
-    $image_url = null;
-    $image_result = add_scientist_image(['id' => $id]);
-
-    if (is_array($image_result) && isset($image_result['image_link'])) {
-        $image_url = $image_result['image_link'];
-    } else {
-
-        $default_image = "http://scientist.local/wp-content/uploads/Default_pfp.jpg";
-
-        $wpdb->insert(
-            'images',
+    $wpdb->query('START TRANSACTION');
+    try {
+        $insert = $wpdb->insert(
+            'scientists',
             [
-                'scientist_id' => $id,
-                'path' => '', // No file on server
-                'link' => $default_image
+                'name' => $name,
+                'birth_year' => $birth_year,
+                'gender' => $gender,
+                'position' => $position,
+                'work_place' => $work_place,
+                'bio' => $bio,
+                'academic_rank_id' => $academic_rank_id,
+                'time_created' => current_time('mysql'),
+                'time_updated' => current_time('mysql')
             ]
         );
+        if ($insert === false) {
+            $wpdb->query('ROLLBACK');
+            return scientist_error('Failed to add scientist', 500);
+        }
+        $id = $wpdb->insert_id;
 
-        $image_url = $default_image;
-    }
-
-    $added_links = [];
-    if (!empty($paper_links)) {
-        foreach ($paper_links as $link) {
-            $result = add_paperlink([
-                'scientist_id' => $id,
-                'url'          => $link
-            ]);
-            if (isset($result['id'])) {
-                $added_links[] = $link;
+        if (!empty($major_field_ids)) {
+            foreach ($major_field_ids as $field_id) {
+                $field_data = $wpdb->get_row(
+                    $wpdb->prepare(
+                        "SELECT level, field_code 
+                    FROM field 
+                    WHERE field.id = %d",
+                        $field_id
+                    )
+                );
+                if (validate_field_code($field_data['field_code'], $field_data['level'], $wpdb) === true) {
+                    $wpdb->insert(
+                        'research_fields',
+                        [
+                            'scientist_id' => $id,
+                            'field_id' => $field_id
+                        ]
+                    );
+                }
             }
         }
+
+        $image_urls = [];
+        $image_result = add_scientist_image(['id' => $id]);
+
+        if (is_array($image_result) && isset($image_result['images'])) {
+            $image_urls = $image_result['images'];
+        }
+
+        $added_links = [];
+        if (!empty($paper_links)) {
+            foreach ($paper_links as $link) {
+                $result = add_paperlink([
+                    'scientist_id' => $id,
+                    'url'          => $link
+                ]);
+                if (isset($result['id'])) {
+                    $added_links[] = $link;
+                }
+            }
+        }
+
+        $wpdb->query('COMMIT');
+        return scientist_json([
+            'id' => $id,
+            'name' => $name,
+            'image_link' => $image_urls,
+            'paper_urls' => $added_links,
+            'message' => 'Scientist added successfully'
+        ]);
+    } catch (\Throwable $e) {
+        $wpdb->query('ROLLBACK');
+        return scientist_error('Failed to add scientist: ' . $e->getMessage(), 500);
     }
-
-    return scientist_json([
-        'id' => $id,
-        'name' => $name,
-        'image_link' => $image_url,
-        'paper_urls' => $added_links,
-        'message' => 'Scientist added successfully'
-    ]);
 }
-

@@ -100,55 +100,61 @@ function add_paperlink($data)
         return scientist_error('Scientist not found', 404);
     }
 
+    $wpdb->query('START TRANSACTION');
     $inserted_links = [];
     $skipped_links  = [];
+    try {
+        foreach ($urls as $url) {
+            $url = esc_url_raw(trim($url));
+            if (empty($url)) {
+                $skipped_links[] = ['url' => $url, 'reason' => 'Invalid URL'];
+                continue;
+            }
 
-    foreach ($urls as $url) {
-        $url = esc_url_raw(trim($url));
-        if (empty($url)) {
-            $skipped_links[] = ['url' => $url, 'reason' => 'Invalid URL'];
-            continue;
+            // Check duplicate
+            $existing = $wpdb->get_var($wpdb->prepare(
+                "SELECT COUNT(*) FROM paper_links WHERE scientist_id = %d AND url = %s",
+                $scientist_id, $url
+            ));
+            if ($existing > 0) {
+                $skipped_links[] = ['url' => $url, 'reason' => 'Already exists'];
+                continue;
+            }
+
+            // Insert
+            $inserted = $wpdb->insert('paper_links', [
+                'scientist_id' => $scientist_id,
+                'url'          => $url,
+                'created_at'   => current_time('mysql'),
+                'updated_at'   => current_time('mysql')
+            ]);
+
+            if ($inserted !== false) {
+                $inserted_links[] = [
+                    'id'  => $wpdb->insert_id,
+                    'url' => $url
+                ];
+            } else {
+                $skipped_links[] = ['url' => $url, 'reason' => 'DB insert failed'];
+            }
         }
 
-        // Check duplicate
-        $existing = $wpdb->get_var($wpdb->prepare(
-            "SELECT COUNT(*) FROM paper_links WHERE scientist_id = %d AND url = %s",
-            $scientist_id, $url
-        ));
-        if ($existing > 0) {
-            $skipped_links[] = ['url' => $url, 'reason' => 'Already exists'];
-            continue;
+        if (empty($inserted_links)) {
+            $wpdb->query('ROLLBACK');
+            return scientist_error('No valid paper links were added', 400);
         }
 
-        // Insert
-        $inserted = $wpdb->insert('paper_links', [
-            'scientist_id' => $scientist_id,
-            'url'          => $url,
-            'created_at'   => current_time('mysql'),
-            'updated_at'   => current_time('mysql')
+        $wpdb->query('COMMIT');
+        return scientist_json([
+            'message'   => 'Paper link(s) processed',
+            'inserted'  => $inserted_links,
+            'skipped'   => $skipped_links
         ]);
-
-        if ($inserted !== false) {
-            $inserted_links[] = [
-                'id'  => $wpdb->insert_id,
-                'url' => $url
-            ];
-        } else {
-            $skipped_links[] = ['url' => $url, 'reason' => 'DB insert failed'];
-        }
+    } catch (\Throwable $e) {
+        $wpdb->query('ROLLBACK');
+        return scientist_error('Failed to add paper link(s): ' . $e->getMessage(), 500);
     }
-
-    if (empty($inserted_links)) {
-        return scientist_error('No valid paper links were added', 400);
-    }
-
-    return scientist_json([
-        'message'   => 'Paper link(s) processed',
-        'inserted'  => $inserted_links,
-        'skipped'   => $skipped_links
-    ]);
 }
-
 
 function delete_paperlink($request)
 {
@@ -168,13 +174,21 @@ function delete_paperlink($request)
         return scientist_error('Paper link not found', 404);
     }
 
-    $deleted = $wpdb->delete('paper_links', ['id' => $id]);
+    $wpdb->query('START TRANSACTION');
+    try {
+        $deleted = $wpdb->delete('paper_links', ['id' => $id]);
 
-    if ($deleted === false) {
-        return scientist_error('Failed to delete paper link', 500);
+        if ($deleted === false) {
+            $wpdb->query('ROLLBACK');
+            return scientist_error('Failed to delete paper link', 500);
+        }
+
+        $wpdb->query('COMMIT');
+        return scientist_json(['message' => 'Paper link deleted successfully']);
+    } catch (\Throwable $e) {
+        $wpdb->query('ROLLBACK');
+        return scientist_error('Failed to delete paper link: ' . $e->getMessage(), 500);
     }
-
-    return scientist_json(['message' => 'Paper link deleted successfully']);
 }
 
 function update_paperlink($request)
@@ -200,11 +214,19 @@ function update_paperlink($request)
     }
     $update_data['updated_at'] = current_time('mysql');
 
-    $updated = $wpdb->update('paper_links', $update_data, ['id' => $id]);
+    $wpdb->query('START TRANSACTION');
+    try {
+        $updated = $wpdb->update('paper_links', $update_data, ['id' => $id]);
 
-    if ($updated === false) {
-        return scientist_error('Failed to update paper link', 500);
+        if ($updated === false) {
+            $wpdb->query('ROLLBACK');
+            return scientist_error('Failed to update paper link', 500);
+        }
+
+        $wpdb->query('COMMIT');
+        return scientist_json(['message' => 'Paper link updated successfully']);
+    } catch (\Throwable $e) {
+        $wpdb->query('ROLLBACK');
+        return scientist_error('Failed to update paper link: ' . $e->getMessage(), 500);
     }
-
-    return scientist_json(['message' => 'Paper link updated successfully']);
 }

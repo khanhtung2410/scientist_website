@@ -352,41 +352,49 @@ function add_major($data)
         return scientist_error('Invalid input data', 400);
     }
 
-    $exists = $wpdb->get_var(
-        $wpdb->prepare(
-            "SELECT COUNT(*) FROM field WHERE field_code = %s AND level = 'major'",
-            $major_code
-        )
-    );
+    $wpdb->query('START TRANSACTION');
+    try {
+        $exists = $wpdb->get_var(
+            $wpdb->prepare(
+                "SELECT COUNT(*) FROM field WHERE field_code = %s AND level = 'major'",
+                $major_code
+            )
+        );
 
-    if ($exists > 0) {
-        return scientist_error('Major code already exists', 409);
+        if ($exists > 0) {
+            $wpdb->query('ROLLBACK');
+            return scientist_error('Major code already exists', 409);
+        }
+
+        $inserted = $wpdb->insert(
+            'field',
+            [
+                'field_name'   => $major_name,
+                'field_code'   => $major_code,
+                'level'        => 'major',
+                'parent_id'    => null
+            ],
+            [
+                '%s',
+                '%s',
+                '%s',
+                'NULL'
+            ]
+        );
+
+        if ($inserted === false) {
+            $wpdb->query('ROLLBACK');
+            return scientist_error('Failed to add major', 500);
+        }
+
+        $wpdb->query('COMMIT');
+        return scientist_json([
+            'major_id' => $wpdb->insert_id
+        ]);
+    } catch (\Throwable $e) {
+        $wpdb->query('ROLLBACK');
+        return scientist_error('Failed to add major: ' . $e->getMessage(), 500);
     }
-
-    // Insert new major (parent_id is NULL)
-    $inserted = $wpdb->insert(
-        'field',
-        [
-            'field_name'   => $major_name,
-            'field_code'   => $major_code,
-            'level'        => 'major',
-            'parent_id'    => null
-        ],
-        [
-            '%s',
-            '%s',
-            '%s',
-            'NULL'
-        ]
-    );
-
-    if ($inserted === false) {
-        return scientist_error('Failed to add major', 500);
-    }
-
-    return scientist_json([
-        'major_id' => $wpdb->insert_id
-    ]);
 }
 
 function add_specialization_group($data)
@@ -410,54 +418,62 @@ function add_specialization_group($data)
         return scientist_error('Invalid input data', 400);
     }
 
-    // Get parent major id
-    $major = $wpdb->get_row(
-        $wpdb->prepare(
-            "SELECT id FROM field WHERE field_code = %s AND level = 'major'",
-            $major_code
-        ),
-        ARRAY_A
-    );
-    if (!$major) {
-        return scientist_error('Major not found', 404);
+    $wpdb->query('START TRANSACTION');
+    try {
+        $major = $wpdb->get_row(
+            $wpdb->prepare(
+                "SELECT id FROM field WHERE field_code = %s AND level = 'major'",
+                $major_code
+            ),
+            ARRAY_A
+        );
+        if (!$major) {
+            $wpdb->query('ROLLBACK');
+            return scientist_error('Major not found', 404);
+        }
+
+        $exists = $wpdb->get_var(
+            $wpdb->prepare(
+                "SELECT COUNT(*) FROM field WHERE field_code = %s AND level = 'group' AND parent_id = %d",
+                $group_code,
+                $major['id']
+            )
+        );
+
+        if ($exists > 0) {
+            $wpdb->query('ROLLBACK');
+            return scientist_error('Specialization group code already exists', 409);
+        }
+
+        $inserted = $wpdb->insert(
+            'field',
+            [
+                'field_name'   => $group_name,
+                'field_code'   => $group_code,
+                'level'        => 'group',
+                'parent_id'    => $major['id']
+            ],
+            [
+                '%s',
+                '%s',
+                '%s',
+                '%d'
+            ]
+        );
+
+        if ($inserted === false) {
+            $wpdb->query('ROLLBACK');
+            return scientist_error('Failed to add specialization group', 500);
+        }
+
+        $wpdb->query('COMMIT');
+        return scientist_json([
+            'group_id' => $wpdb->insert_id
+        ]);
+    } catch (\Throwable $e) {
+        $wpdb->query('ROLLBACK');
+        return scientist_error('Failed to add specialization group: ' . $e->getMessage(), 500);
     }
-
-    $exists = $wpdb->get_var(
-        $wpdb->prepare(
-            "SELECT COUNT(*) FROM field WHERE field_code = %s AND level = 'group' AND parent_id = %d",
-            $group_code,
-            $major['id']
-        )
-    );
-
-    if ($exists > 0) {
-        return scientist_error('Specialization group code already exists', 409);
-    }
-
-    // Insert new specialization group
-    $inserted = $wpdb->insert(
-        'field',
-        [
-            'field_name'   => $group_name,
-            'field_code'   => $group_code,
-            'level'        => 'group',
-            'parent_id'    => $major['id']
-        ],
-        [
-            '%s',
-            '%s',
-            '%s',
-            '%d'
-        ]
-    );
-
-    if ($inserted === false) {
-        return scientist_error('Failed to add specialization group', 500);
-    }
-
-    return scientist_json([
-        'group_id' => $wpdb->insert_id
-    ]);
 }
 
 function add_specialization($data)
@@ -478,64 +494,74 @@ function add_specialization($data)
         return scientist_error('Invalid input data', 400);
     }
 
-    // Get parent group id
-    $major = $wpdb->get_row(
-        $wpdb->prepare(
-            "SELECT id FROM field WHERE field_code = %s AND level = 'major'",
-            $major_code
-        ),
-        ARRAY_A
-    );
-    if (!$major) {
-        return scientist_error('Major not found', 404);
+    $wpdb->query('START TRANSACTION');
+    try {
+        $major = $wpdb->get_row(
+            $wpdb->prepare(
+                "SELECT id FROM field WHERE field_code = %s AND level = 'major'",
+                $major_code
+            ),
+            ARRAY_A
+        );
+        if (!$major) {
+            $wpdb->query('ROLLBACK');
+            return scientist_error('Major not found', 404);
+        }
+        $group = $wpdb->get_row(
+            $wpdb->prepare(
+                "SELECT id FROM field WHERE field_code = %s AND level = 'group' AND parent_id = %d",
+                $group_code,
+                $major['id']
+            ),
+            ARRAY_A
+        );
+        if (!$group) {
+            $wpdb->query('ROLLBACK');
+            return scientist_error('Specialization group not found', 404);
+        }
+
+        $exists = $wpdb->get_var(
+            $wpdb->prepare(
+                "SELECT COUNT(*) FROM field WHERE field_code = %s AND level = 'specialization' AND parent_id = %d",
+                $specialization_code,
+                $group['id']
+            )
+        );
+
+        if ($exists > 0) {
+            $wpdb->query('ROLLBACK');
+            return scientist_error('Specialization code already exists', 409);
+        }
+
+        $inserted = $wpdb->insert(
+            'field',
+            [
+                'field_name'   => $specialization_name,
+                'field_code'   => $specialization_code,
+                'level'        => 'specialization',
+                'parent_id'    => $group['id']
+            ],
+            [
+                '%s',
+                '%s',
+                '%s',
+                '%d'
+            ]
+        );
+
+        if ($inserted === false) {
+            $wpdb->query('ROLLBACK');
+            return scientist_error('Failed to add specialization', 500);
+        }
+
+        $wpdb->query('COMMIT');
+        return scientist_json([
+            'specialization_id' => $wpdb->insert_id
+        ]);
+    } catch (\Throwable $e) {
+        $wpdb->query('ROLLBACK');
+        return scientist_error('Failed to add specialization: ' . $e->getMessage(), 500);
     }
-    $group = $wpdb->get_row(
-        $wpdb->prepare(
-            "SELECT id FROM field WHERE field_code = %s AND level = 'group' AND parent_id = %d",
-            $group_code,
-            $major['id']
-        ),
-        ARRAY_A
-    );
-    if (!$group) {
-        return scientist_error('Specialization group not found', 404);
-    }
-
-    $exists = $wpdb->get_var(
-        $wpdb->prepare(
-            "SELECT COUNT(*) FROM field WHERE field_code = %s AND level = 'specialization' AND parent_id = %d",
-            $specialization_code,
-            $group['id']
-        )
-    );
-
-    if ($exists > 0) {
-        return scientist_error('Specialization code already exists', 409);
-    }
-
-    $inserted = $wpdb->insert(
-        'field',
-        [
-            'field_name'   => $specialization_name,
-            'field_code'   => $specialization_code,
-            'level'        => 'specialization',
-            'parent_id'    => $group['id']
-        ],
-        [
-            '%s',
-            '%s',
-            '%s',
-            '%d'
-        ]
-    );
-
-    if ($inserted === false) {
-        return scientist_error('Failed to add specialization', 500);
-    }
-
-    return scientist_json([
-        'specialization_id' => $wpdb->insert_id
-    ]);
 }
 
 function update_major(WP_REST_Request $request)
@@ -698,20 +724,28 @@ function update_field($field_code, $level, $data)
         return scientist_error(['message' => 'No changes detected']);
     }
 
-    $updated = $wpdb->update(
-        'field',
-        $fields,
-        ['id' => $field['id']],
-        $formats,
-        ['%d']
-    );
+    $wpdb->query('START TRANSACTION');
+    try {
+        $updated = $wpdb->update(
+            'field',
+            $fields,
+            ['id' => $field['id']],
+            $formats,
+            ['%d']
+        );
 
-    if ($updated === false) {
-        return scientist_error('Failed to update ' . $level, 500);
+        if ($updated === false) {
+            $wpdb->query('ROLLBACK');
+            return scientist_error('Failed to update ' . $level, 500);
+        }
+
+        $wpdb->query('COMMIT');
+        return scientist_json([
+            'message'        => ucfirst($level) . ' updated successfully',
+            'updated_fields' => $fields
+        ]);
+    } catch (\Throwable $e) {
+        $wpdb->query('ROLLBACK');
+        return scientist_error('Failed to update ' . $level . ': ' . $e->getMessage(), 500);
     }
-
-    return scientist_json([
-        'message'        => ucfirst($level) . ' updated successfully',
-        'updated_fields' => $fields
-    ]);
 }
